@@ -1,0 +1,159 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Desafio 15 Dias</title>
+  
+  <link rel="manifest" href="data:application/manifest+json,{%22name%22:%22Desafio%2015%20Dias%22,%22short_name%22:%22Desafio15%22,%22start_url%22:%22.%22,%22display%22:%22standalone%22,%22background_color%22:%22%23F31908%22,%22theme_color%22:%22%23F31908%22}">
+  <meta name="theme-color" content="#F31908">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="Desafio 15">
+
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+
+  <style>
+    body {
+      font-family: 'Plus Jakarta Sans', sans-serif;
+      background-color: #F31908;
+      -webkit-tap-highlight-color: transparent;
+      user-select: none;
+    }
+    
+    .glass-card {
+      background: rgba(255, 255, 255, 0.96);
+      backdrop-filter: blur(12px);
+      border: 1px solid rgba(255, 255, 255, 0.3);
+    }
+
+    .glass-dark {
+      background: rgba(0, 0, 0, 0.25);
+      backdrop-filter: blur(8px);
+      border: 1px solid rgba(255, 255, 255, 0.15);
+    }
+
+    .pulse-glow {
+      box-shadow: 0 0 15px rgba(255, 255, 255, 0.4);
+    }
+
+    input[type="number"]::-webkit-inner-spin-button,
+    input[type="number"]::-webkit-outer-spin-button {
+      -webkit-appearance: none;
+      margin: 0;
+    }
+    input[type="number"] {
+      -moz-appearance: textfield;
+    }
+  </style>
+</head>
+<body class="min-h-screen text-slate-800 pb-12 flex flex-col items-center">
+
+  <header class="w-full max-w-md px-5 pt-8 pb-4 text-white text-center">
+    <div class="inline-flex items-center gap-2 bg-white/20 backdrop-blur-md px-3 py-1 rounded-full text-xs font-bold tracking-wider uppercase mb-2 text-white border border-white/20">
+      <i class="fa-solid fa-fire text-amber-300"></i> Foco Total
+    </div>
+    <h1 class="text-3xl font-extrabold tracking-tight">Desafio 15 Dias</h1>
+    <p class="text-white/80 text-sm mt-1">Meta: 30 questões por dia (450 total)</p>
+  </header>
+
+  <main class="w-full max-w-md px-4 space-y-4">
+
+    <!-- Card de Progresso Geral -->
+    <div class="glass-card rounded-2xl p-5 shadow-xl text-slate-800">
+      <div class="flex justify-between items-end mb-2">
+        <div>
+          <span class="text-xs font-bold text-slate-400 uppercase tracking-wider block">Progresso Geral</span>
+          <span id="completed-days-count" class="text-2xl font-black text-slate-800">0/15</span>
+          <span class="text-xs text-slate-500 font-semibold">dias concluídos</span>
+        </div>
+        <div class="text-right">
+          <span id="percentage-text" class="text-3xl font-black text-[#F31908]">0%</span>
+        </div>
+      </div>
+
+      <div class="w-full bg-slate-100 h-3.5 rounded-full overflow-hidden p-0.5 border border-slate-200">
+        <div id="progress-bar" class="bg-gradient-to-r from-red-500 to-[#F31908] h-full rounded-full transition-all duration-500 ease-out w-0 shadow-sm"></div>
+      </div>
+
+      <div class="grid grid-cols-3 gap-2 mt-4 pt-4 border-t border-slate-100 text-center">
+        <div class="bg-slate-50 p-2 rounded-xl">
+          <span class="text-[10px] uppercase font-bold text-slate-400 block">Resolvidas</span>
+          <span id="total-questions" class="text-base font-extrabold text-slate-700">0</span>
+        </div>
+        <div class="bg-slate-50 p-2 rounded-xl">
+          <span class="text-[10px] uppercase font-bold text-slate-400 block">Média/Dia</span>
+          <span id="avg-questions" class="text-base font-extrabold text-slate-700">0</span>
+        </div>
+        <div class="bg-slate-50 p-2 rounded-xl">
+          <span class="text-[10px] uppercase font-bold text-slate-400 block">Restantes</span>
+          <span id="remaining-days" class="text-base font-extrabold text-slate-700">15</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Lista de Dias -->
+    <div id="days-container" class="space-y-2.5">
+      <!-- Injetado via JS -->
+    </div>
+
+    <!-- Ações e Reset -->
+    <div class="pt-4 flex justify-between items-center px-2">
+      <button onclick="resetData()" class="text-xs font-bold text-white/70 hover:text-white flex items-center gap-1.5 transition-colors">
+        <i class="fa-solid fa-rotate-right"></i> Reiniciar Desafio
+      </button>
+      <span class="text-[10px] text-white/60 font-medium">Salvo automaticamente</span>
+    </div>
+
+  </main>
+
+  <script>
+    const TOTAL_DAYS = 15;
+    const DEFAULT_GOAL = 30;
+    
+    let appState = JSON.parse(localStorage.getItem('desafio_15_dias_state')) || Array.from({ length: TOTAL_DAYS }, (_, i) => ({
+      day: i + 1,
+      completed: false,
+      count: 0,
+      note: ''
+    }));
+
+    function saveState() {
+      localStorage.setItem('desafio_15_dias_state', JSON.stringify(appState));
+      updateStats();
+    }
+
+    function toggleDay(index) {
+      appState[index].completed = !appState[index].completed;
+      if (appState[index].completed && appState[index].count === 0) {
+        appState[index].count = DEFAULT_GOAL;
+      }
+      saveState();
+      renderDays();
+      checkAllCompleted();
+    }
+
+    function updateCount(index, value) {
+      const val = parseInt(value) || 0;
+      appState[index].count = Math.max(0, val);
+      if (appState[index].count >= DEFAULT_GOAL) {
+        appState[index].completed = true;
+      }
+      saveState();
+      renderDays();
+    }
+
+    function adjustCount(index, delta) {
+      appState[index].count = Math.max(0, (appState[index].count || 0) + delta);
+      if (appState[index].count >= DEFAULT_GOAL) {
+        appState[index].completed = true;
+      }
+      saveState();
+      renderDays();
+    }
+
+    function updateNote(index, text) {
+      appState
